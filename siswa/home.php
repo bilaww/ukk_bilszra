@@ -59,6 +59,19 @@ if (isset($_POST['hapus'])) {
         echo "<script>alert('Gagal menghapus pengaduan!'); window.location='index.php';</script>";
     }
 }
+
+// PAGINATION
+$batas = 5;
+$halaman = isset($_GET['halaman']) ? (int)$_GET['halaman'] : 1;
+$halaman_awal = ($halaman > 1) ? ($halaman * $batas) - $batas : 0;
+
+$result = mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM pengaduan WHERE nisn='$nisn'");
+$data_total = mysqli_fetch_assoc($result);
+$jumlah_data = $data_total['total'];
+$total_halaman = ceil($jumlah_data / $batas);
+
+$query = mysqli_query($koneksi, "SELECT * FROM pengaduan WHERE nisn='$nisn' ORDER BY id_pengaduan DESC LIMIT $halaman_awal, $batas");
+$no = $halaman_awal + 1;
 ?>
 
 <!DOCTYPE html>
@@ -82,11 +95,7 @@ if (isset($_POST['hapus'])) {
 <body>
   <div class="container mt-5">
     <div class="text-center mb-4">
-    <?php
-
-?>
-<h1 class="fw-bold">Selamat Datang <?php echo isset($_SESSION['nama']) ? $_SESSION['nama'] : 'Guest'; ?></h1>
-
+      <h1 class="fw-bold">Selamat Datang <?php echo isset($_SESSION['nama']) ? $_SESSION['nama'] : 'Guest'; ?></h1>
     </div>
 
     <div class="row">
@@ -148,10 +157,7 @@ if (isset($_POST['hapus'])) {
                 </tr>
               </thead>
               <tbody>
-                <?php
-                $no = 1;
-                $query = mysqli_query($koneksi, "SELECT * FROM pengaduan WHERE nisn='$nisn' ORDER BY id_pengaduan DESC");
-                while ($data = mysqli_fetch_array($query)) { ?>
+                <?php while ($data = mysqli_fetch_array($query)) { ?>
                   <tr>
                     <td><?php echo $no++; ?></td>
                     <td><?php echo $data['judul_laporan']; ?></td>
@@ -165,33 +171,50 @@ if (isset($_POST['hapus'])) {
                       <?php } ?>
                     </td>
                     <td>
-  <?php
-    $status = $data['status']; // Ambil status dari database
-    $badge_class = 'bg-secondary'; // Default badge color
-
-    if ($status == 'Proses') {
-        $badge_class = 'bg-warning';
-    } elseif ($status == 'Selesai') {
-        $badge_class = 'bg-success';
-    } elseif ($status == 'Ditolak') {
-        $badge_class = 'bg-danger';
-    }
-
-    echo "<span class='badge $badge_class'>" . htmlspecialchars($status) . "</span>";
-  ?>
-</td>
-               <td>
+                      <?php
+                        $status = $data['status'];
+                        $badge_class = 'bg-secondary';
+                        if ($status == 'Proses') {
+                            $badge_class = 'bg-warning';
+                        } elseif ($status == 'Selesai') {
+                            $badge_class = 'bg-success';
+                        } elseif ($status == 'Ditolak') {
+                            $badge_class = 'bg-danger';
+                        }
+                        echo "<span class='badge $badge_class'>" . htmlspecialchars($status) . "</span>";
+                      ?>
+                    </td>
+                    <td>
                       <form action="" method="POST" style="display:inline;">
                         <input type="hidden" name="id_pengaduan" value="<?php echo $data['id_pengaduan']; ?>">
                         <button type="submit" name="hapus" class="btn btn-danger" onclick="return confirm('Apakah Anda yakin ingin menghapus pengaduan ini?');">Hapus</button>
                       </form>
-                      <!-- Tombol Edit -->
                       <a href="edit_pengaduan.php?id_pengaduan=<?php echo $data['id_pengaduan']; ?>" class="btn btn-warning">Edit</a>
                     </td>
                   </tr>
                 <?php } ?>
               </tbody>
             </table>
+
+            <!-- Navigasi Pagination -->
+            <nav>
+              <ul class="pagination justify-content-center">
+                <?php if ($halaman > 1): ?>
+                  <li class="page-item"><a class="page-link" href="?halaman=<?php echo $halaman - 1; ?>">«</a></li>
+                <?php endif; ?>
+
+                <?php for ($i = 1; $i <= $total_halaman; $i++): ?>
+                  <li class="page-item <?php echo ($i == $halaman) ? 'active' : ''; ?>">
+                    <a class="page-link" href="?halaman=<?php echo $i; ?>"><?php echo $i; ?></a>
+                  </li>
+                <?php endfor; ?>
+
+                <?php if ($halaman < $total_halaman): ?>
+                  <li class="page-item"><a class="page-link" href="?halaman=<?php echo $halaman + 1; ?>">»</a></li>
+                <?php endif; ?>
+              </ul>
+            </nav>
+
           </div>
         </div>
       </div>

@@ -42,18 +42,20 @@
 include 'config/koneksi.php';
 
 if (isset($_POST['kirim'])) {
-    $nisn = trim($_POST['nisn']);
-    $nama = trim($_POST['nama']);
-    $email = strtolower(trim($_POST['email']));
-    $password = password_hash(trim($_POST['password']), PASSWORD_DEFAULT); // Enkripsi password
-    $telp = trim($_POST['telp']);
+    // Gunakan mysqli_real_escape_string untuk aman dari karakter spesial
+    $nisn = mysqli_real_escape_string($koneksi, trim($_POST['nisn']));
+    $nama = mysqli_real_escape_string($koneksi, trim($_POST['nama']));
+    $email = mysqli_real_escape_string($koneksi, strtolower(trim($_POST['email'])));
+    $password_raw = trim($_POST['password']);
+    $password = mysqli_real_escape_string($koneksi, password_hash($password_raw, PASSWORD_DEFAULT));
+    $telp = mysqli_real_escape_string($koneksi, trim($_POST['telp']));
     $level = 'siswa';
 
     // Cek apakah NISN atau Email sudah terdaftar
     $cek_query = mysqli_query($koneksi, "SELECT * FROM siswa WHERE nisn='$nisn' OR email='$email'");
-    
+
     if (mysqli_num_rows($cek_query) > 0) {
-        echo "<script>alert('NISN atau Email sudah terdaftar!'); window.location='index.php?page=register';</script>";
+        echo "<script>alert('NISN atau Email sudah terdaftar!'); window.location='index.php';</script>";
     } else {
         // Simpan ke database
         $query = mysqli_query($koneksi, "INSERT INTO siswa (nisn, nama, email, password, telp, level) 
@@ -62,7 +64,7 @@ if (isset($_POST['kirim'])) {
         if ($query) {
             echo "<script>alert('Registrasi berhasil! Silakan login.'); window.location='index.php?page=login';</script>";
         } else {
-            echo "<script>alert('Registrasi gagal! Silakan coba lagi.'); window.location='index.php?page=register';</script>";
+            echo "<script>alert('Registrasi gagal! Silakan coba lagi.'); window.location='index.php';</script>";
         }
     }
 }
