@@ -10,6 +10,7 @@ if (!$koneksi) {
     die("Koneksi gagal: " . mysqli_connect_error());
 }
 
+// Hapus data siswa
 if (isset($_POST['hapus_siswa'])) {
     $nisn = mysqli_real_escape_string($koneksi, $_POST['nisn']);
     $query = mysqli_query($koneksi, "DELETE FROM siswa WHERE nisn='$nisn'");
@@ -19,6 +20,21 @@ if (isset($_POST['hapus_siswa'])) {
         echo "<script>alert('Data gagal dihapus!');</script>";
     }
 }
+
+// Pagination setup
+$batas = 5;
+$halaman = isset($_GET['halaman']) ? (int)$_GET['halaman'] : 1;
+$halaman_awal = ($halaman > 1) ? ($halaman * $batas) - $batas : 0;
+
+$previous = $halaman - 1;
+$next = $halaman + 1;
+
+$data = mysqli_query($koneksi, "SELECT * FROM siswa");
+$jumlah_data = mysqli_num_rows($data);
+$total_halaman = ceil($jumlah_data / $batas);
+
+$data_siswa = mysqli_query($koneksi, "SELECT * FROM siswa LIMIT $halaman_awal, $batas");
+$no = $halaman_awal + 1;
 ?>
 
 <!DOCTYPE html>
@@ -35,6 +51,7 @@ if (isset($_POST['hapus_siswa'])) {
 
         <a href="#" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#tambahData">Tambah Data Siswa</a>
 
+        <!-- Modal Tambah Data -->
         <div class="modal fade" id="tambahData" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -70,6 +87,7 @@ if (isset($_POST['hapus_siswa'])) {
             </div>
         </div>
 
+        <!-- Data Siswa -->
         <div class="row mt-3">
             <div class="col-lg-12">
                 <div class="card shadow border-0">
@@ -90,35 +108,34 @@ if (isset($_POST['hapus_siswa'])) {
                             </thead>
                             <tbody>
                                 <?php
-                                $no = 1;
-                                $query = mysqli_query($koneksi, "SELECT * FROM siswa");
-                                if (mysqli_num_rows($query) > 0) {
-                                    while ($data = mysqli_fetch_array($query)) { ?>
+                                if (mysqli_num_rows($data_siswa) > 0) {
+                                    while ($data = mysqli_fetch_array($data_siswa)) { ?>
                                         <tr>
-                                            <td><?php echo $no++; ?></td>
-                                            <td><?php echo $data['nisn']; ?></td>
-                                            <td><?php echo $data['nama']; ?></td>
-                                            <td><?php echo $data['email']; ?></td>
-                                            <td><?php echo $data['telp']; ?></td>
+                                            <td><?= $no++; ?></td>
+                                            <td><?= $data['nisn']; ?></td>
+                                            <td><?= $data['nama']; ?></td>
+                                            <td><?= $data['email']; ?></td>
+                                            <td><?= $data['telp']; ?></td>
                                             <td>
-                                                <a href="#" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#hapus<?php echo $data['nisn']; ?>">HAPUS</a>
-                                                <div class="modal fade" id="hapus<?php echo $data['nisn']; ?>" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                                <a href="#" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#hapus<?= $data['nisn']; ?>">HAPUS</a>
+                                                <!-- Modal Hapus -->
+                                                <div class="modal fade" id="hapus<?= $data['nisn']; ?>" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
                                                     <div class="modal-dialog">
                                                         <div class="modal-content">
                                                             <div class="modal-header">
                                                                 <h5 class="modal-title">Hapus Data</h5>
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                             </div>
-                                                            <div class="modal-body">
-                                                                <form action="" method="POST">
-                                                                    <input type="hidden" name="nisn" value="<?php echo $data['nisn']; ?>">
-                                                                    <p>Apakah yakin akan menghapus data <br> <strong><?php echo $data['nama']; ?></strong>?</p>
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="submit" name="hapus_siswa" class="btn btn-danger">Hapus</button>
-                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                                                            </div>
-                                                                </form>
+                                                            <form action="" method="POST">
+                                                                <div class="modal-body">
+                                                                    <input type="hidden" name="nisn" value="<?= $data['nisn']; ?>">
+                                                                    <p>Apakah yakin akan menghapus data <strong><?= $data['nama']; ?></strong>?</p>
+                                                                </div>
+                                                                <div class="modal-footer">
+                                                                    <button type="submit" name="hapus_siswa" class="btn btn-danger">Hapus</button>
+                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                                                </div>
+                                                            </form>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -132,10 +149,31 @@ if (isset($_POST['hapus_siswa'])) {
                                 <?php } ?>
                             </tbody>
                         </table>
+
+                        <!-- Pagination -->
+                        <nav>
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item <?= ($halaman <= 1) ? 'disabled' : '' ?>">
+                                    <a class="page-link" href="?page=siswa&halaman=<?= $previous ?>">«</a>
+                                </li>
+                                <?php for ($i = 1; $i <= $total_halaman; $i++) : ?>
+                                    <li class="page-item <?= ($halaman == $i) ? 'active' : '' ?>">
+                                        <a class="page-link" href="?page=siswa&halaman=<?= $i ?>"><?= $i ?></a>
+                                    </li>
+                                <?php endfor; ?>
+                                <li class="page-item <?= ($halaman >= $total_halaman) ? 'disabled' : '' ?>">
+                                    <a class="page-link" href="?page=siswa&halaman=<?= $next ?>">»</a>
+                                </li>
+                            </ul>
+                        </nav>
+
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Script Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

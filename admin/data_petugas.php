@@ -8,9 +8,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['tambah_petugas'])) {
     $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
     $telp = $_POST['telp'];
 
-    $password_hashed = password_hash($password, PASSWORD_DEFAULT);
-    $query = "INSERT INTO petugas (nama_petugas, email, password, telp) VALUES ('$nama_petugas', '$email', '$password_hashed', '$telp')";
-        if (mysqli_query($koneksi, $query)) {
+    $query = "INSERT INTO petugas (nama_petugas, email, password, telp) VALUES ('$nama_petugas', '$email', '$password', '$telp')";
+    if (mysqli_query($koneksi, $query)) {
         echo "<script>alert('Petugas berhasil ditambahkan!'); window.location='index.php?page=petugas';</script>";
     } else {
         echo "<script>alert('Gagal menambahkan petugas!');</script>";
@@ -27,6 +26,21 @@ if (isset($_GET['hapus_id'])) {
         echo "<script>alert('Gagal menghapus petugas!');</script>";
     }
 }
+
+// Pagination setup
+$batas = 5;
+$halaman = isset($_GET['halaman']) ? (int)$_GET['halaman'] : 1;
+$halaman_awal = ($halaman > 1) ? ($halaman * $batas) - $batas : 0;
+
+$previous = $halaman - 1;
+$next = $halaman + 1;
+
+$data = mysqli_query($koneksi, "SELECT * FROM petugas");
+$jumlah_data = mysqli_num_rows($data);
+$total_halaman = ceil($jumlah_data / $batas);
+
+$data_petugas = mysqli_query($koneksi, "SELECT * FROM petugas LIMIT $halaman_awal, $batas");
+$no = $halaman_awal + 1;
 ?>
 
 <!DOCTYPE html>
@@ -57,9 +71,7 @@ if (isset($_GET['hapus_id'])) {
                     </thead>
                     <tbody>
                         <?php
-                        $no = 1;
-                        $query = mysqli_query($koneksi, "SELECT * FROM petugas");
-                        while ($data = mysqli_fetch_array($query)) {
+                        while ($data = mysqli_fetch_array($data_petugas)) {
                         ?>
                         <tr>
                             <td><?= $no++; ?></td>
@@ -74,6 +86,23 @@ if (isset($_GET['hapus_id'])) {
                         <?php } ?>
                     </tbody>
                 </table>
+
+                <!-- Pagination -->
+                <nav>
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item <?= ($halaman <= 1) ? 'disabled' : '' ?>">
+                            <a class="page-link" href="index.php?page=petugas&halaman=<?= $previous ?>">«</a>
+                        </li>
+                        <?php for ($i = 1; $i <= $total_halaman; $i++) : ?>
+                            <li class="page-item <?= ($halaman == $i) ? 'active' : '' ?>">
+                                <a class="page-link" href="index.php?page=petugas&halaman=<?= $i ?>"><?= $i ?></a>
+                            </li>
+                        <?php endfor; ?>
+                        <li class="page-item <?= ($halaman >= $total_halaman) ? 'disabled' : '' ?>">
+                            <a class="page-link" href="index.php?page=petugas&halaman=<?= $next ?>">»</a>
+                        </li>
+                    </ul>
+                </nav>
             </div>
         </div>
     </div>

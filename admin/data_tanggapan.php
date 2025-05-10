@@ -1,12 +1,24 @@
+<?php
+include '../config/koneksi.php';
+
+// PAGINATION SETTINGS
+$limit = 10; // jumlah data per halaman
+$page = isset($_GET['page_number']) ? (int)$_GET['page_number'] : 1;
+$start = ($page - 1) * $limit;
+
+// HITUNG TOTAL DATA
+$total_query = mysqli_query($koneksi, "SELECT COUNT(*) as total FROM tanggapan");
+$total_data = mysqli_fetch_assoc($total_query)['total'];
+$total_pages = ceil($total_data / $limit);
+?>
+
 <div class="container">
   <div class="row mt-5">
     <div class="col-lg-12">
       <div class="card shadow border-0">
         <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
           <h5 class="mb-0">DATA TANGGAPAN</h5>
-          <a href="/UKK_BILSZRA/admin/export_tanggapan.php" class="btn btn-success" target="_blank">
-            Export Excel
-          </a>
+          <a href="/UKK_BILSZRA/admin/export_tanggapan.php" class="btn btn-success" target="_blank">Export Excel</a>
         </div>
         <div class="card-body">
           <table class="table table-hover table-bordered">
@@ -24,11 +36,11 @@
             </thead>
             <tbody>
               <?php
-              include '../config/koneksi.php';
-              $no = 1;
+              $no = $start + 1;
               $query = mysqli_query($koneksi, "SELECT a.*, b.* FROM tanggapan a 
-                                 INNER JOIN pengaduan b ON a.id_pengaduan = b.id_pengaduan 
-                                 ORDER BY a.tgl_tanggapan DESC");
+                               INNER JOIN pengaduan b ON a.id_pengaduan = b.id_pengaduan 
+                               ORDER BY a.tgl_tanggapan DESC
+                               LIMIT $start, $limit");
 
               while ($data = mysqli_fetch_array($query)) { ?>
                 <tr class="text-center align-middle">
@@ -49,6 +61,24 @@
               <?php } ?>
             </tbody>
           </table>
+
+          <!-- PAGINATION -->
+          <nav>
+            <ul class="pagination justify-content-center">
+              <?php if ($page > 1) { ?>
+                <li class="page-item"><a class="page-link" href="?page=tanggapan&page_number=<?php echo $page - 1; ?>">Previous</a></li>
+              <?php } ?>
+              <?php for ($i = 1; $i <= $total_pages; $i++) { ?>
+                <li class="page-item <?php echo ($i == $page) ? 'active' : ''; ?>">
+                  <a class="page-link" href="?page=tanggapan&page_number=<?php echo $i; ?>"><?php echo $i; ?></a>
+                </li>
+              <?php } ?>
+              <?php if ($page < $total_pages) { ?>
+                <li class="page-item"><a class="page-link" href="?page=tanggapan&page_number=<?php echo $page + 1; ?>">Next</a></li>
+              <?php } ?>
+            </ul>
+          </nav>
+
         </div>
       </div>
     </div>
@@ -96,7 +126,7 @@ if (isset($_POST['kirim'])) {
         title: 'Berhasil!',
         text: 'Tanggapan berhasil dikirim dan status diperbarui.',
         icon: 'success'
-      }).then(() => window.location.href = 'index.php?page=pengaduan');
+      }).then(() => window.location.href = 'index.php?page=tanggapan');
     </script>";
   } else {
     echo "<script>alert('Gagal mengirim tanggapan!');</script>";
